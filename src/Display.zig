@@ -3,13 +3,13 @@ const util = @import("Util.zig");
 const command = @import("Commands.zig");
 
 pub const Display = struct {
-    read_fds: std.os.fd_t[1],
+    read_fds: [1]std.os.fd_t,
     orig: std.os.termios,
     size: util.Rect,
     print_buffer: std.ArrayList(u8),
+    const in_fd = std.os.STDIN_FILENO;
+    const out_fd = std.os.STDOUT_FILENO;
     pub fn init(alloc: std.mem.Allocator) !Display {
-        const in_fd = std.os.STDIN_FILENO;
-        const out_fd = std.os.STDOUT_FILENO;
         if (!std.os.isatty(in_fd)) {
             return error.InvalidWindow;
         }
@@ -31,11 +31,7 @@ pub const Display = struct {
         _ = try std.os.write(out_fd, "\x1b[?1049h");
         //* put terminal in raw mode after flushing */
         try std.os.tcsetattr(in_fd, .FLUSH, raw);
-        var d = TerminalDisplay{
-            .orig = orig,
-            .winCols = 0,
-            .winRows = 0,
-        };
+
         return Display{
             .read_fds = .{in_fd},
             .orig = orig,
@@ -45,12 +41,10 @@ pub const Display = struct {
     }
     fn readScreenSize(fd: std.os.fd_t) util.Rect {
         var ws: std.os.system.winsize = undefined;
-        if (std.os.system.ioctl(fd, std.os.system.T.IOCGWINSZ, @ptrToInt(&ws)) == 0)
-            return .{
-                .row = ws.ws_row,
-                .col = ws.ws_col,
-            }
-        else .{
+        return if (std.os.system.ioctl(fd, std.os.system.T.IOCGWINSZ, @ptrToInt(&ws)) == 0) .{
+            .row = ws.ws_row,
+            .col = ws.ws_col,
+        } else .{
             .row = 0,
             .col = 0,
         };
@@ -60,17 +54,19 @@ pub const Display = struct {
     const show_cursor = "\x1b[?25H";
     const go_to_base = "\x1b[H";
     const move_cursor = "\x1b[{};{}h"; //row,col
-    pub fn draw(self: *Display, cmd: DrawCommand) !void {
+    pub fn draw(self: *Display, cmd: command.DrawCommand) !void {
+        _ = cmd;
         self.print_buffer.clearRetainingCapacity();
         var writer = self.print_buffer.writer();
-        try std.fmt.format("{s}{s}", .{ hide_cursor, go_to_base });
-        for (self.menus.items) |menu_item| {
-            //try
+        try std.fmt.format(writer, "{s}{s}", .{ hide_cursor, go_to_base });
+        //for (self.menus.items) |menu_item| {
+        //try
 
-        }
+        //}
     }
 
     pub fn deinit(self: *Display) void {
+        std.os.tcsetattr(in_fd, .FLUSH, self.orig) catch {};
         self.print_buffer.deinit();
     }
 };

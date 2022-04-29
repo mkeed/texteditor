@@ -6,9 +6,8 @@ pub const DrawString = struct {
     face: util.Face,
     pub fn init(alloc: std.mem.Allocator) DrawString {
         return .{
-            .text = std.ArrayList(u8),
-            //.face = util.Face.
-
+            .text = std.ArrayList(u8).init(alloc),
+            .face = util.Face.defaultFace(),
         };
     }
     pub fn deinit(self: *DrawString) void {
@@ -19,7 +18,7 @@ pub const DrawString = struct {
 pub const DrawCommand = struct {
     pub fn init(alloc: std.mem.Allocator) DrawCommand {
         return .{
-            .alloc = std.mem.Allocator,
+            .alloc = alloc,
             .menus = std.ArrayList(DrawString).init(alloc),
         };
     }

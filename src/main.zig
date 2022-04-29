@@ -1,15 +1,16 @@
 const std = @import("std");
 const Display = @import("Display.zig");
-const cmds = @imports("Commands.zig");
+const cmds = @import("Commands.zig");
 
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     const alloc = gpa.allocator();
-    var disp = Display.init(alloc);
+    var disp = try Display.Display.init(alloc);
     defer disp.deinit();
-    var cmd = cmds.DrawCommand{};
-    disp.draw();
+    var cmd = cmds.DrawCommand.init(alloc);
+    defer cmd.deinit();
+    try disp.draw(cmd);
 }
 
 test "basic test" {
