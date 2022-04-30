@@ -1,6 +1,7 @@
 const std = @import("std");
 const Display = @import("Display.zig");
 const cmds = @import("Commands.zig");
+const ec = @import("EditorCore.zig");
 
 pub fn main() anyerror!void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -10,6 +11,7 @@ pub fn main() anyerror!void {
     defer disp.deinit();
     var cmd = cmds.DrawCommand.init(alloc);
     defer cmd.deinit();
+    try cmd.addMenu("File");
     try disp.draw(cmd);
 }
 

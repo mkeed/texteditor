@@ -14,6 +14,7 @@ pub const Display = struct {
             return error.InvalidWindow;
         }
         const orig = try std.os.tcgetattr(out_fd);
+        _ = try std.os.write(out_fd, enable_altmode);
         var raw = orig; //* modify the original mode */
 
         //* input modes: no break, no CR to NL, no parity check, no strip char,
@@ -28,7 +29,6 @@ pub const Display = struct {
         raw.lflag &= ~(std.os.system.ECHO | std.os.system.ICANON | std.os.system.IEXTEN | std.os.system.ISIG);
         //* control chars - set return condition: min number of bytes and timer. */
         //raw.cc[6] = 0; //* Return each byte, or zero for timeout. */ //VMIN
-        _ = try std.os.write(out_fd, "\x1b[?1049h");
         //* put terminal in raw mode after flushing */
         try std.os.tcsetattr(in_fd, .FLUSH, raw);
 
@@ -54,19 +54,22 @@ pub const Display = struct {
     const show_cursor = "\x1b[?25H";
     const go_to_base = "\x1b[H";
     const move_cursor = "\x1b[{};{}h"; //row,col
+    const enable_altmode = "\x1b[?1049h";
+    const disable_altmode = "\x1b[?1049l";
     pub fn draw(self: *Display, cmd: command.DrawCommand) !void {
-        _ = cmd;
         self.print_buffer.clearRetainingCapacity();
         var writer = self.print_buffer.writer();
         try std.fmt.format(writer, "{s}{s}", .{ hide_cursor, go_to_base });
-        //for (self.menus.items) |menu_item| {
-        //try
+        try std.fmt.format(writer, "Thing2\n", .{});
 
-        //}
+        _ = try std.os.write(out_fd, self.print_buffer.items);
+        var buf: [5]u8 = undefined;
+        _ = try std.os.read(in_fd, buf[0..]);
     }
 
     pub fn deinit(self: *Display) void {
         std.os.tcsetattr(in_fd, .FLUSH, self.orig) catch {};
         self.print_buffer.deinit();
+        _ = std.os.write(out_fd, disable_altmode) catch {};
     }
 };

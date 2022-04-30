@@ -15,15 +15,17 @@ pub const DrawString = struct {
     }
 };
 
+pub const DrawLine = struct {
+    lineNum: usize,
+    text: std.ArrayList(u8),
+};
+
 pub const DrawCommand = struct {
     pub fn init(alloc: std.mem.Allocator) DrawCommand {
         return .{
             .alloc = alloc,
-            .menus = std.ArrayList(DrawString).init(alloc),
+            .menus = std.ArrayList(std.ArrayList(u8)).init(alloc),
         };
-    }
-    pub fn addMenu(self: *DrawCommand, text: DrawString) !void {
-        try self.menus.append(text);
     }
     pub fn deinit(self: *DrawCommand) void {
         for (self.menus.items) |*item| {
@@ -31,6 +33,11 @@ pub const DrawCommand = struct {
         }
         self.menus.deinit();
     }
+    pub fn addLine(
+        self: *DrawCommand,
+        lineNum: usize,
+        text: []const u8,
+    ) !void {}
     alloc: std.mem.Allocator,
-    menus: std.ArrayList(DrawString),
+    lines: std.AutoHashMap(usize, std.ArrayList(u8)),
 };
